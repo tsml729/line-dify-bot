@@ -1,0 +1,17 @@
+{
+  "name": "line-dify-bot",
+  "version": "1.0.0",
+  "description": "LINE Bot integrated with Dify AI",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@line/bot-sdk": "^7.5.2",
+    "axios": "^1.3.4",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": "16.x"
+  }
+}
