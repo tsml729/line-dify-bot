@@ -10,7 +10,7 @@ const LINE_CONFIG = {
 };
 
 const DIFY_API_KEY = process.env.DIFY_API_KEY;
-const DIFY_API_URL = process.env.DIFY_API_URL;
+const DIFY_API_URL = process.env.DIFY_API_URL || 'https://dify.prd.ai-ope.com/v1/workflows/run';
 
 // LINEミドルウェア
 app.use('/webhook', line.middleware(LINE_CONFIG));
@@ -42,15 +42,19 @@ async function handleEvent(event) {
   }
 
   const userMessage = event.message.text;
+  console.log(`受信メッセージ: ${userMessage}`);
   
   try {
-    // Dify APIにリクエスト
+    console.log(`Dify API URL: ${DIFY_API_URL}`);
+    console.log('Dify APIにリクエスト送信...');
+    
+    // Dify APIにリクエスト - 修正されたリクエスト形式
     const difyResponse = await axios.post(
       DIFY_API_URL,
       {
-        inputs: {},
-        query: userMessage,
-        response_mode: 'blocking'
+        inputs: { query: userMessage },
+        response_mode: "blocking", // streamingではなくblockingに変更
+        user: "line"
       },
       {
         headers: {
@@ -60,8 +64,11 @@ async function handleEvent(event) {
       }
     );
 
-    // Difyからの応答を取得
-    const botResponse = difyResponse.data.answer;
+    console.log('Dify API応答受信');
+    console.log(JSON.stringify(difyResponse.data).substring(0, 200) + '...'); // 応答の一部をログ出力
+    
+    // Difyからの応答を取得 - レスポンス構造に合わせて修正
+    const botResponse = difyResponse.data.answer || difyResponse.data.response || "応答が取得できませんでした";
     
     // LINEに返信
     return lineClient.replyMessage(event.replyToken, {
@@ -69,7 +76,10 @@ async function handleEvent(event) {
       text: botResponse
     });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('エラー詳細:', error.message);
+    if (error.response) {
+      console.error('API応答:', error.response.status, JSON.stringify(error.response.data));
+    }
     return lineClient.replyMessage(event.replyToken, {
       type: 'text',
       text: 'エラーが発生しました。しばらくしてからもう一度お試しください。'
