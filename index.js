@@ -23,6 +23,12 @@ app.get('/', (req, res) => {
   res.send('LINE Bot with Dify is running!');
 });
 
+// UptimeRobot用のpingエンドポイント
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+  console.log('Ping received at:', new Date().toISOString());
+});
+
 // Webhookルート
 app.post('/webhook', async (req, res) => {
   try {
