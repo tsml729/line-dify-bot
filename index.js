@@ -1,4 +1,44 @@
-// イベントハンドラ内のレスポンス処理部分を修正
+const express = require('express');
+const line = require('@line/bot-sdk');
+const axios = require('axios');
+const app = express();
+
+// 環境変数情報を出力
+console.log('環境変数PORT:', process.env.PORT);
+
+// 環境設定
+const LINE_CONFIG = {
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+  channelSecret: process.env.LINE_CHANNEL_SECRET
+};
+
+const DIFY_API_KEY = process.env.DIFY_API_KEY;
+const DIFY_API_URL = process.env.DIFY_API_URL;
+
+// LINEミドルウェア
+app.use('/webhook', line.middleware(LINE_CONFIG));
+
+// 基本ルート - サーバー稼働確認用
+app.get('/', (req, res) => {
+  res.send('LINE Bot with Dify is running!');
+});
+
+// Webhookルート
+app.post('/webhook', async (req, res) => {
+  try {
+    const events = req.body.events;
+    await Promise.all(events.map(handleEvent));
+    res.status(200).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).end();
+  }
+});
+
+// LINE Clientの初期化
+const lineClient = new line.Client(LINE_CONFIG);
+
+// イベントハンドラ
 async function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
     return null;
@@ -59,3 +99,10 @@ async function handleEvent(event) {
     });
   }
 }
+
+// サーバー起動
+const PORT = process.env.PORT || 3000;
+console.log(`サーバーをポート ${PORT} で起動します...`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on port ${PORT}`);
+});
