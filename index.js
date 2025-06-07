@@ -51,19 +51,46 @@ async function handleEvent(event) {
   }
 
   const userMessage = event.message.text;
-  console.log(`受信メッセージ: ${userMessage}`);
+  
+  // 会話コンテキスト情報を取得
+  const sourceType = event.source.type; // 'user', 'group', 'room'のいずれか
+  const userId = event.source.userId || 'unknown'; // 送信者のユーザーID
+  
+  // グループIDやルームID（存在する場合）
+  const groupId = sourceType === 'group' ? event.source.groupId : null;
+  const roomId = sourceType === 'room' ? event.source.roomId : null;
+  
+  // コンテキスト情報をログ出力
+  console.log(`メッセージ受信: ${userMessage}`);
+  console.log(`コンテキスト: type=${sourceType}, userId=${userId}, groupId=${groupId}, roomId=${roomId}`);
   
   try {
     console.log(`Dify API URL: ${DIFY_API_URL}`);
     console.log('Dify APIにリクエスト送信...');
     
+    // 会話コンテキスト情報をオブジェクトにまとめる
+    const conversationContext = {
+      sourceType: sourceType,
+      userId: userId,
+      groupId: groupId,
+      roomId: roomId,
+      isGroup: sourceType === 'group',
+      isRoom: sourceType === 'room', 
+      isDM: sourceType === 'user'
+    };
+    
+    console.log('会話コンテキスト:', conversationContext);
+    
     // Dify APIにリクエスト
     const difyResponse = await axios.post(
       DIFY_API_URL,
       {
-        inputs: { query: userMessage },
+        inputs: { 
+          query: userMessage,
+          context: conversationContext
+        },
         response_mode: "blocking",
-        user: "line-user"
+        user: userId // 送信者のユーザーIDを使用
       },
       {
         headers: {
