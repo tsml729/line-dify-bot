@@ -51,6 +51,7 @@ async function handleEvent(event) {
   }
 
   const userMessage = event.message.text;
+  console.log(`受信メッセージ: ${userMessage}`);
   
   // 会話コンテキスト情報を取得
   const sourceType = event.source.type; // 'user', 'group', 'room'のいずれか
@@ -60,16 +61,12 @@ async function handleEvent(event) {
   const groupId = sourceType === 'group' ? event.source.groupId : null;
   const roomId = sourceType === 'room' ? event.source.roomId : null;
   
-  // コンテキスト情報をログ出力
-  console.log(`メッセージ受信: ${userMessage}`);
-  console.log(`コンテキスト: type=${sourceType}, userId=${userId}, groupId=${groupId}, roomId=${roomId}`);
-  
   try {
     console.log(`Dify API URL: ${DIFY_API_URL}`);
     console.log('Dify APIにリクエスト送信...');
     
-    // 会話情報をオブジェクトとして準備
-    const conversationInfo = {
+    // 会話情報をJSON文字列に変換
+    const conversationInfo = JSON.stringify({
       sourceType: sourceType,
       userId: userId,
       groupId: groupId,
@@ -77,10 +74,7 @@ async function handleEvent(event) {
       isGroup: sourceType === 'group',
       isRoom: sourceType === 'room', 
       isDM: sourceType === 'user'
-    };
-    
-    // アプローチ1: context変数をJSON文字列として送信
-    const conversationContextString = JSON.stringify(conversationInfo);
+    });
     
     // Dify APIにリクエスト
     const difyResponse = await axios.post(
@@ -88,14 +82,10 @@ async function handleEvent(event) {
       {
         inputs: { 
           query: userMessage,
-          // アプローチ1: 文字列化したJSONを送信
-          // context: conversationContextString,
-          
-          // アプローチ2: 別の変数名を使用
-          conversation_info: conversationInfo
+          conversation_info: conversationInfo  // JSON文字列として送信
         },
         response_mode: "blocking",
-        user: userId
+        user: userId  // ユーザーIDを指定して会話履歴を維持
       },
       {
         headers: {
