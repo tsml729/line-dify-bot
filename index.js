@@ -50,13 +50,13 @@ async function handleEvent(event) {
     return null;
   }
 
-  const userMessage = event.message.text;
+  // constからletに変更
+  let userMessage = event.message.text;
   const sourceType = event.source.type; // 'user', 'group', 'room'のいずれか
   
   // グループチャットやマルチパーソンチャットの場合、メンションチェック
   if (sourceType === 'group' || sourceType === 'room') {
     // ボットへのメンションがあるか確認
-    // 注: 実際のメンション形式は "@ボット名" または "＠ボット名" などとなります
     const botName = process.env.BOT_NAME || "ボット"; // 環境変数からボット名を取得
     const mentionPatterns = [
       `@${botName}`, 
