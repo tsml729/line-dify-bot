@@ -85,7 +85,7 @@ async function handleEvent(event) {
           conversation_info: conversationInfo  // JSON文字列として送信
         },
         response_mode: "blocking",
-        user: userId  // ユーザーIDを指定して会話履歴を維持
+        user: "line-user"  // 元の固定値に戻す
       },
       {
         headers: {
