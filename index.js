@@ -68,8 +68,8 @@ async function handleEvent(event) {
     console.log(`Dify API URL: ${DIFY_API_URL}`);
     console.log('Dify APIにリクエスト送信...');
     
-    // 会話コンテキスト情報をオブジェクトにまとめる
-    const conversationContext = {
+    // 会話情報をオブジェクトとして準備
+    const conversationInfo = {
       sourceType: sourceType,
       userId: userId,
       groupId: groupId,
@@ -79,7 +79,8 @@ async function handleEvent(event) {
       isDM: sourceType === 'user'
     };
     
-    console.log('会話コンテキスト:', conversationContext);
+    // アプローチ1: context変数をJSON文字列として送信
+    const conversationContextString = JSON.stringify(conversationInfo);
     
     // Dify APIにリクエスト
     const difyResponse = await axios.post(
@@ -87,10 +88,14 @@ async function handleEvent(event) {
       {
         inputs: { 
           query: userMessage,
-          context: conversationContext
+          // アプローチ1: 文字列化したJSONを送信
+          // context: conversationContextString,
+          
+          // アプローチ2: 別の変数名を使用
+          conversation_info: conversationInfo
         },
         response_mode: "blocking",
-        user: userId // 送信者のユーザーIDを使用
+        user: userId
       },
       {
         headers: {
