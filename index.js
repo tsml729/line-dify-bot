@@ -44,23 +44,51 @@ app.post('/webhook', async (req, res) => {
 // LINE Clientの初期化
 const lineClient = new line.Client(LINE_CONFIG);
 
-// イベントハンドラ
+// イベントハンドラを修正
 async function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
     return null;
   }
 
   const userMessage = event.message.text;
+  const sourceType = event.source.type; // 'user', 'group', 'room'のいずれか
+  
+  // グループチャットやマルチパーソンチャットの場合、メンションチェック
+  if (sourceType === 'group' || sourceType === 'room') {
+    // ボットへのメンションがあるか確認
+    // 注: 実際のメンション形式は "@ボット名" または "＠ボット名" などとなります
+    const botName = process.env.BOT_NAME || "ボット"; // 環境変数からボット名を取得
+    const mentionPatterns = [
+      `@${botName}`, 
+      `＠${botName}`,
+      `@${botName} `,
+      `＠${botName} `
+    ];
+    
+    // いずれかのメンションパターンに一致するか確認
+    const isMentioned = mentionPatterns.some(pattern => 
+      userMessage.includes(pattern)
+    );
+    
+    // メンションがなければ応答しない
+    if (!isMentioned) {
+      console.log('メンションなしのグループメッセージ、応答しません');
+      return null;
+    }
+    
+    // メンション部分を除去したメッセージを作成
+    let cleanedMessage = userMessage;
+    mentionPatterns.forEach(pattern => {
+      cleanedMessage = cleanedMessage.replace(pattern, '').trim();
+    });
+    
+    console.log(`メンション検出、処理メッセージ: ${cleanedMessage}`);
+    userMessage = cleanedMessage; // メンションを除去したメッセージに置き換え
+  }
+  
   console.log(`受信メッセージ: ${userMessage}`);
   
-  // 会話コンテキスト情報を取得
-  const sourceType = event.source.type; // 'user', 'group', 'room'のいずれか
-  const userId = event.source.userId || 'unknown'; // 送信者のユーザーID
-  
-  // グループIDやルームID（存在する場合）
-  const groupId = sourceType === 'group' ? event.source.groupId : null;
-  const roomId = sourceType === 'room' ? event.source.roomId : null;
-  
+  // 以下は既存のコード
   try {
     console.log(`Dify API URL: ${DIFY_API_URL}`);
     console.log('Dify APIにリクエスト送信...');
@@ -68,9 +96,9 @@ async function handleEvent(event) {
     // 会話情報をJSON文字列に変換
     const conversationInfo = JSON.stringify({
       sourceType: sourceType,
-      userId: userId,
-      groupId: groupId,
-      roomId: roomId,
+      userId: event.source.userId || 'unknown',
+      groupId: sourceType === 'group' ? event.source.groupId : null,
+      roomId: sourceType === 'room' ? event.source.roomId : null,
       isGroup: sourceType === 'group',
       isRoom: sourceType === 'room', 
       isDM: sourceType === 'user'
@@ -82,10 +110,10 @@ async function handleEvent(event) {
       {
         inputs: { 
           query: userMessage,
-          conversation_info: conversationInfo  // JSON文字列として送信
+          conversation_info: conversationInfo
         },
         response_mode: "blocking",
-        user: "line-user"  // 元の固定値に戻す
+        user: "line-user"
       },
       {
         headers: {
